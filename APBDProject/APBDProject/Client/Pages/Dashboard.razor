@@ -1,0 +1,262 @@
+﻿@page "/"
+@page "/dashboard"
+@using APBDProject.Client.Services
+@using APBDProject.Shared.Models
+@using APBDProject.Shared
+@using APBDProject.Client.Shared
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Data
+@inject ISearchService _searchService
+@inject IStockDetailsService _stockDetailsSerivce
+@inject IArticleDetailsService _articleDetailsSerivce
+@inject IPriceDetailsService _priceDetailsSerivce
+@inject IArticleDetailsService _articleDetailsSerivce
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager navigation
+@inject NavigationManager Navigation
+@inject SignOutSessionStateManager SignOutManager
+@attribute [Authorize]
+
+<div class="page-name">
+    <span class="page-dashboard">Dashboard</span>
+    <button class="logout" @onclick="BeginSignOut">LOGOUT</button>
+</div>
+
+<div class="main-page">
+    <div class="page-flex">
+        <div class="search">
+            <SfAutoComplete TItem="StockMarket" TValue="string" Placeholder="Select Stock Market" DataSource="@StockMarkets" EnableVirtualization="true" Query="@LocalDataQuery" SortOrder="Syncfusion.Blazor.DropDowns.SortOrder.Ascending" ShowPopupButton="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.StartsWith" Highlight="true" PopupHeight="350px" Width="100%" PopupWidth="111%">
+                <AutoCompleteTemplates TItem="StockMarket">
+                    <ItemTemplate>
+                        <div class="row">
+                            <div class="first-element-in-list">@(context.Ticker)</div>
+                            <div class="second-element-in-list">@(context.Name)</div>
+                            <div class="third-element-in-list">@(context.PrimaryExchange)</div>
+                        </div>
+                    </ItemTemplate>
+                    <NoRecordsTemplate>
+                        <span class="norecord">No stock market found</span>
+                    </NoRecordsTemplate>
+                </AutoCompleteTemplates>
+                <AutoCompleteFieldSettings Value="Ticker"></AutoCompleteFieldSettings>
+                <AutoCompleteEvents TItem="StockMarket" TValue="string" Filtering="OnFilter" OnValueSelect="@OnValueSelectHandler"></AutoCompleteEvents>
+            </SfAutoComplete>
+        </div>
+        <div class="button-search">
+            <button class="button-action" type="submit" @onclick="OnClickSearchButton">
+                <span>SEARCH</span>
+            </button>
+        </div>
+        <div class="button-watchlist">
+            <button class="button-action" type="submit" @onclick="OnClickShowWatchlistButton">
+                <span>WATCHLIST</span>
+            </button>
+        </div>
+    </div>
+
+    <SfDialog Width="400px" @bind-Visible="ShowAddMessage" IsModal="true">
+        <DialogTemplates>
+            <Header> Search </Header>
+            <Content>
+                <span>Error occured</span>
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButtons>
+                <DialogButton OnClick="@OnDialogClose" Content="OK" IsPrimary="true">
+                </DialogButton>
+            </DialogButtons>
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+@if(CurrentTicker!=null)
+{
+    <DashboardDetails CurrentTicker="@CurrentTicker" User="@User" StockMarket="@StockMarket" PricesList="@OHLC" ArticlesList="@Articles"></DashboardDetails>
+}
+
+<style>
+    .button-search{
+        width:20%;
+        border: none;
+    }
+
+    .button-watchlist{
+        width:20%;
+        border: none;
+    }
+
+    .main-page{
+        width:100%;
+    }
+
+    .button-action{
+        width: 35%;
+        color: white;
+        background-color: #007feb;
+    }
+
+    .search{
+        width: 65%;
+    }
+
+    .page-flex{
+        display: flex;
+    }
+
+    .first-element-in-list{
+        font-weight: bold; 
+        color: #007feb;
+        padding-left:4px; 
+        width:10%; 
+        overflow: hidden; 
+        white-space: initial;
+    }
+
+    .second-element-in-list{
+        font-weight: bold;
+        width:80%; 
+        color: #007feb;
+        overflow: hidden;
+        white-space: initial;
+    }
+
+    .third-element-in-list{
+        font-weight: bold; 
+        width:10%; 
+        color: #007feb;
+        overflow: hidden;
+        white-space: initial;
+    }
+
+    .page-name{
+        display: flex;
+    }
+
+    .page-dashboard{
+        color: #007feb;
+        font-weight: bold;
+        font-size: 30px;
+        width: 10%;
+    }
+
+    .logout{
+        width: 200px;
+        height: 40px;
+        color: white;
+        background-color: #007feb;
+    }
+
+</style>
+
+@code {
+    public Query LocalDataQuery = new Query().Take(8);
+    public IEnumerable<StockMarket> StockMarkets { get; set; }
+    public string CurrentTicker { get; set; }
+    public string InputName { get; set; }
+    public string User { get; set; }
+    public StockMarketDetails StockMarket { get; set; }
+    public string ResultStockStatus { get; set; }
+    public string ResultPricesStatus { get; set; }
+    public string ResultArticlesStatus { get; set; }
+    public IEnumerable<OHLCDetails> OHLC { get; set; }
+    public IEnumerable<ArticleDetails> Articles { get; set; }
+    private bool ShowAddMessage { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        User = authState.User.Identity.Name;
+        ResultStockStatus = "OK";
+    }
+
+    private async Task OnValueSelectHandler(SelectEventArgs<StockMarket> args)
+    {
+        InputName = args.ItemData.Ticker;
+        StateHasChanged();
+    }
+
+    private async Task OnFilter(FilteringEventArgs args)
+    {
+        InputName = args.Text;
+        StockMarkets = await _searchService.GetStockMarketsByName(args.Text);
+    }
+
+
+    private async Task OnClickSearchButton()
+    {
+        try
+        {
+            CurrentTicker = null;
+
+            StockMarket = await _stockDetailsSerivce.GetStockFromPolygon(InputName);
+
+            if(StockMarket is null)
+            {
+                StockMarket = await _stockDetailsSerivce.GetStockFromDatabase(InputName);
+            }
+            else
+            {
+                if (StockMarket.Branding is not null) StockMarket.Branding.LogoUrl = StockMarket.Branding.LogoUrl + "?apiKey=G1ocVvPGB0BWpUbn_9rhfKxrp6Uh3Dc3";
+
+                if (StockMarket.Branding is null) StockMarket.Branding = new BrandingDetails();
+
+                if (StockMarket.Addresss is null) StockMarket.Addresss = new AddressDetails();   
+
+                ResultStockStatus = await _stockDetailsSerivce.AddStockToDatabase(StockMarket);
+                if (ResultStockStatus == "CONFLICT")
+                {
+                    ResultStockStatus = await _stockDetailsSerivce.UpdateStockInDatabase(StockMarket);
+                }
+            }
+
+            if(StockMarket is not null)
+            {
+                OHLC = await _priceDetailsSerivce.GetPricesFromPolygon(InputName);
+                Articles = await _articleDetailsSerivce.GetArticlesFromPolygon(InputName);
+
+                if(OHLC is null)
+                {
+                    OHLC = await _priceDetailsSerivce.GetPricesFromDatabase(InputName);
+                }
+                else
+                {
+                    ResultPricesStatus = await _priceDetailsSerivce.AddPricesToDatabase(OHLC.ToList());
+                }
+
+                if(Articles is null)
+                {
+                    Articles = (await _articleDetailsSerivce.GetArticlesFromDatabase(InputName)).ToList();
+                }
+                else
+                {
+                    ResultArticlesStatus = await _articleDetailsSerivce.AddArticlesToDatabase(StockMarket.Ticker, Articles);   
+                } 
+            }
+            StateHasChanged();
+            CurrentTicker = InputName;
+        }
+        catch(Exception)
+        {
+            ShowAddMessage = true;
+        }
+    }
+
+    private async Task OnClickShowWatchlistButton()
+    {
+        navigation.NavigateTo($"/watchlist");
+    }
+
+    private async void OnDialogClose()
+    {
+        ShowAddMessage = false;
+    }
+
+        private async Task BeginSignOut(MouseEventArgs args)
+    {
+        await SignOutManager.SetSignOutState();
+        Navigation.NavigateTo("authentication/logout");
+    }
+}

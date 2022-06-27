@@ -1,0 +1,25 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="main">
+        <div class="login">
+            <AuthorizeView>
+                <NotAuthorized>
+                    <a href="authentication/register">Register</a>
+                    <a href="authentication/login">Login</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+        <div class="content px-4">
+        @Body
+        </div>
+    </div>
+</div>
+
+<style>
+    .login{
+        font-size: 20px;
+        text-align: left;
+        color: #007feb;
+    }
+</style>

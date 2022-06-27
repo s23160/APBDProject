@@ -1,0 +1,118 @@
+﻿@page "/watchlist"
+@using APBDProject.Client.Services
+@using APBDProject.Shared.Models
+@using APBDProject.Shared
+@using APBDProject.Client.Shared
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject IWatchlistDetailsService _watchlistDetailsService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager navigation
+@attribute [Authorize]
+
+<h3>Watchlist</h3>
+@if(WatchlistStockMarkets==null)
+{
+    <div>There are no stocks market added</div>
+}
+else
+{
+    <SfGrid @ref="Grid" DataSource="@WatchlistStockMarkets" AllowPaging="true" AllowSorting="true">
+        <GridEvents CommandClicked="OnDeleteClicked" TValue="WatchlistDetails"></GridEvents>
+        <GridEditSettings AllowDeleting="true"></GridEditSettings>
+        <GridPageSettings PageSize="10"></GridPageSettings>
+        <GridColumns>
+            <GridColumn Field=@nameof(WatchlistDetails.Logo) HeaderText="Logo" TextAlign="TextAlign.Center" Width="100">
+                <Template>
+                    @{
+                        var stock = (context as WatchlistDetails);
+                                            <div class="img">
+                                                <img src="@($"{stock.Logo}")" alt="@($"{stock.Logo}")" />
+                                            </div>
+                    }
+                </Template>
+            </GridColumn>
+            <GridColumn Field=@nameof(WatchlistDetails.Ticker) HeaderText="Ticker" IsPrimaryKey="true" TextAlign="TextAlign.Center" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(WatchlistDetails.Name) HeaderText="Name" TextAlign="TextAlign.Center" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(WatchlistDetails.Locale) HeaderText="Locale" TextAlign="TextAlign.Center" Width="100"></GridColumn>
+            <GridColumn Field=@nameof(WatchlistDetails.Market) HeaderText="Market" TextAlign="TextAlign.Center" Width="100"></GridColumn>
+            <GridColumn HeaderText="Buttons" Width="100" TextAlign="TextAlign.Center">
+                <GridCommandColumns>
+                    <GridCommandColumn Type="CommandButtonType.Delete" ButtonOption="@(new CommandButtonOptions() { Content = "Delete", CssClass = "e-danger" })"></GridCommandColumn>
+                </GridCommandColumns>
+            </GridColumn>
+        </GridColumns>
+    </SfGrid>
+}
+
+<div>
+    <SfButton class="return-button" type="submit" @onclick="OnClickReturnButton">
+        <span>Back</span>
+    </SfButton>
+</div>
+
+<style>
+    img {
+        height: 50px;
+        width: 50px;
+        border-radius: 10px;
+    }
+
+    .e-headercell{
+        color: white;
+        font-size: 15px;
+    }
+
+    .e-grid .e-headercell { 
+        background-color: #007feb;
+    } 
+
+    .e-grid .e-gridcontent .e-rowcell {
+        color: #007feb; !important;
+        border: 3px solid;
+        border-color: black;
+    } 
+
+    .e-grid .e-table{
+        border: 4px solid;
+    }
+
+    .return-button{
+        height: 50px;
+        width: 90px;
+        color: white;
+        background-color: #007feb;
+        margin-top: 30px;
+        border: none;
+    }
+
+</style>
+
+@code {
+    private IEnumerable<WatchlistDetails> WatchlistStockMarkets { get; set; }
+    public SfGrid<WatchlistDetails> Grid { get; set; }
+    public string User { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        User = authState.User.Identity.Name;
+        WatchlistStockMarkets = await _watchlistDetailsService.GetWatchlist(User);
+    }
+
+    public async void OnDeleteClicked(CommandClickEventArgs<WatchlistDetails> args)
+    {
+        if (args.CommandColumn.ButtonOption.Content == "Delete")
+        {
+            await _watchlistDetailsService.RemoveStockFromWatchlist(args.RowData.Ticker, User);
+            WatchlistStockMarkets = await _watchlistDetailsService.GetWatchlist(User);
+            await Grid.Refresh();
+        }
+        StateHasChanged();
+    }
+
+    private async Task OnClickReturnButton()
+    {
+        navigation.NavigateTo($"/dashboard");
+    }
+}

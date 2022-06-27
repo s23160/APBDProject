@@ -1,0 +1,496 @@
+﻿@using APBDProject.Client.Services
+@using APBDProject.Shared.Models
+@using ExportType = Syncfusion.Blazor.Charts.ExportType
+@inject IWatchlistDetailsService _watchlistDetailsService
+@inject IPriceDetailsService _priceDetailsSerivce
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager navigation
+@attribute [Authorize]
+
+<div class="con">
+    <div class="box">
+        <SfDashboardLayout Columns="1" AllowResizing="false" CellAspectRatio="5" ShowGridLines="false" AllowDragging="false">
+            <DashboardLayoutPanels>
+                <DashboardLayoutPanel Id="one" Row="0" Column="0" >
+                    <ContentTemplate>
+                        @if(StockMarket is null)
+                        {
+                            <h3>No data available on the stock market</h3>
+                        }
+                        else
+                        {
+                            <div class="information">
+                                <div class="logo-tab">
+                                    @if(StockMarket.Branding is not null)
+                                    {
+                                        <img class="logo" src="@StockMarket.Branding.LogoUrl" alt="Image"/>   
+                                    }
+                                </div>
+                                <div class="data">
+                                    <SfTab CssClass="default-tab">
+                                        <TabItems>
+                                            @if(StockMarket.Ticker is not null)
+                                            {
+                                                    <TabItem Content="@StockMarket.Ticker">
+                                                    <ChildContent>
+                                                        <TabHeader Text="Ticker" ></TabHeader>
+                                                    </ChildContent>
+                                                </TabItem>   
+                                            }
+                                            @if(StockMarket.Name is not null)
+                                            {
+                                                    <TabItem Content="@StockMarket.Name">
+                                                    <ChildContent>
+                                                        <TabHeader Text="Name" ></TabHeader>
+                                                    </ChildContent>
+                                                </TabItem>   
+                                            }
+                                            @if(StockMarket.Market is not null)
+                                            {
+                                                    <TabItem Content="@StockMarket.Market">
+                                                    <ChildContent>
+                                                        <TabHeader Text="Market" ></TabHeader>
+                                                    </ChildContent>
+                                                </TabItem>   
+                                            }
+                                            @if(StockMarket.Locale is not null)
+                                            {
+                                                    <TabItem Content="@StockMarket.Locale">
+                                                    <ChildContent>
+                                                        <TabHeader Text="Locale" ></TabHeader>
+                                                    </ChildContent>
+                                                </TabItem>   
+                                            }
+                                            @if(StockMarket.PrimaryExchange is not null)
+                                            {
+                                                    <TabItem Content="@StockMarket.PrimaryExchange">
+                                                    <ChildContent>
+                                                        <TabHeader Text="Primary Exchange" ></TabHeader>
+                                                    </ChildContent>
+                                                </TabItem>   
+                                            }
+                                            @if(StockMarket.Type is not null)
+                                            {
+                                                    <TabItem Content="@StockMarket.Type">
+                                                    <ChildContent>
+                                                        <TabHeader Text="Type" ></TabHeader>
+                                                    </ChildContent>
+                                                </TabItem>   
+                                            }
+                                            @if(StockMarket.CurrencyName is not null)
+                                            {
+                                                    <TabItem Content="@StockMarket.CurrencyName">
+                                                    <ChildContent>
+                                                        <TabHeader Text="Currency Name" ></TabHeader>
+                                                    </ChildContent>
+                                                </TabItem>   
+                                            }
+                                            @if(StockMarket.SicDescription is not null)
+                                            {
+                                                    <TabItem Content="@StockMarket.SicDescription">
+                                                    <ChildContent>
+                                                        <TabHeader Text="Sic Description" ></TabHeader>
+                                                    </ChildContent>
+                                                </TabItem>   
+                                            }
+                                            @if(StockMarket.PhoneNumber is not null)
+                                            {
+                                                    <TabItem Content="@StockMarket.PhoneNumber">
+                                                    <ChildContent>
+                                                        <TabHeader Text="Phone Number" ></TabHeader>
+                                                    </ChildContent>
+                                                </TabItem>   
+                                            }
+                                            @if(StockMarket.Description is not null)
+                                            {
+                                                    <TabItem Content="@StockMarket.Description">
+                                                    <ChildContent>
+                                                        <TabHeader Text="Description" ></TabHeader>
+                                                    </ChildContent>
+                                                </TabItem>   
+                                            }
+                                        </TabItems>
+                                    </SfTab>
+                                </div>
+                                <div class="right-button">
+                                    <button type="submit" class="add-button" @onclick="AddStock"> + </button>
+                                </div>
+                            </div>
+                        }
+                    </ContentTemplate>
+                </DashboardLayoutPanel>
+                @if(PricesList is not null && StockMarket is not null)
+                {
+                <DashboardLayoutPanel Id="two" Row="1" Column="0" SizeY="2" >
+                    <ContentTemplate>
+                        <div>
+                            <SfStockChart Title="@CurrentTicker" ExportType="new List<ExportType>() { }" EnableSelector="false" EnableCustomRange="false" IndicatorType="@IndicatorType" TrendlineType="@TrendlineType" SeriesType="@SeriesType">
+                                <StockChartEvents OnPointClick="PointClick"></StockChartEvents>
+                                <StockChartTooltipSettings Enable="true">
+                                </StockChartTooltipSettings>
+                                <StockChartPeriods>
+                                    <StockChartPeriod IntervalType=RangeIntervalType.Hours Interval="24" Text='current day' Selected="true"></StockChartPeriod>
+                                    <StockChartPeriod IntervalType=RangeIntervalType.Weeks Interval="1" Text='1 week ago'></StockChartPeriod>
+                                    <StockChartPeriod IntervalType=RangeIntervalType.Months Interval="1" Text='1 month ago'></StockChartPeriod>
+                                    <StockChartPeriod IntervalType=RangeIntervalType.Months Interval="3" Text='3 month ago'></StockChartPeriod>
+                                </StockChartPeriods>
+                                <StockChartSeriesCollection>
+                                    <StockChartSeries
+                                        DataSource="@Prices"
+                                        Type="ChartSeriesType.HiloOpenClose"
+                                        XName="Day"
+                                        High="High"
+                                        Low="Low"
+                                        Open="Open"
+                                        Close="Close"
+                                        Volume="Volume"
+                                        Name="@CurrentTicker">
+                                    </StockChartSeries>
+                                </StockChartSeriesCollection>
+                            </SfStockChart>
+                        </div>
+                            @if(PriceExtend is not null)
+                            {
+                                <div class="price-info">
+                                    <div class="price-left">
+                                        <br /><span class="price-left-info">From: @PriceExtend.Day.Date </span><br />
+                                        <span class="price-left-info">Symbol: @PriceExtend.Ticker </span><br />
+                                        <span class="price-left-info">Open: @PriceExtend.Open </span><br />
+                                        <span class="price-left-info">High: @PriceExtend.High </span><br />
+                                        <span class="price-left-info">Low: @PriceExtend.Low </span><br />
+                                        <span class="price-left-info">Close: @PriceExtend.Close </span><br />
+                                        <span class="price-left-info">Volume: @PriceExtend.Volume </span><br />
+                                    </div>
+                                    <div class="price-right">
+                                        @if(PriceExtend.AfterHours is not null && PriceExtend.PreMarket is not null)
+                                        {
+                                            <br /><span class="price-right-info">After hours: @PriceExtend.AfterHours </span><br />
+                                            <span class="price-right-info">Pre market: @PriceExtend.PreMarket </span><br />
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="price-info">
+                                    <div class="price-left">
+                                        <br /><span class="price-left-info">From: @Prices[0].Day </span><br />
+                                        <span class="price-left-info">Symbol: @Prices[0].Ticker </span><br />
+                                        <span class="price-left-info">Open: @Prices[0].Open </span><br />
+                                        <span class="price-left-info">High: @Prices[0].High </span><br />
+                                        <span class="price-left-info">Low: @Prices[0].Low </span><br />
+                                        <span class="price-left-info">Close: @Prices[0].Close </span><br />
+                                        <span class="price-left-info">Volume: @Prices[0].Volume </span><br />
+                                    </div>
+                                    <div class="price-right"></div>
+                                </div> 
+                            }
+                        </ContentTemplate>
+                </DashboardLayoutPanel>  
+                }
+
+                @if(StockMarket is not null && ArticlesList is not null && Articles.Count()!=0 && Articles is not null)
+                {
+                <DashboardLayoutPanel Id="three" Row="5" Column="0" SizeY="5" >
+                    <ContentTemplate>
+                        <div class="articles">
+                            @if (Articles.Count > 0)
+                            {
+                            <div class="article-block">
+                                <div class="article-block-left">
+                                    <img class="picture" src="@Articles[0].ImageUrl" alt="Image"/>
+                                </div>
+                                <div class="article-block-right">
+                                    <br /><span class="article-info-author">@Articles[0].Author </span><br />
+                                    <span class="article-info-title">@Articles[0].Title </span><br />
+                                    <span class="article-info-description">@Articles[0].Description </span><br />
+                                </div>
+                            </div>   
+                            }
+
+                            @if (Articles.Count > 1)
+                            {
+                            <div class="article-block">
+                                <div class="article-block-left">
+                                    <img class="picture" src="@Articles[1].ImageUrl" alt="Image"/>
+                                </div>
+                                <div class="article-block-right">
+                                    <br /><span class="article-info-author">@Articles[1].Author </span><br />
+                                    <span class="article-info-title">@Articles[1].Title </span><br />
+                                    <span class="article-info-description">@Articles[1].Description </span><br />
+                                </div>
+                            </div> 
+                            }
+
+                            @if (Articles.Count > 2)
+                            {
+                            <div class="article-block">
+                                <div class="article-block-left">
+                                    <img class="picture" src="@Articles[2].ImageUrl" alt="Image"/>
+                                </div>
+                                <div class="article-block-right">
+                                    <br /><span class="article-info-author">@Articles[2].Author </span><br />
+                                    <span class="article-info-title">@Articles[2].Title </span><br />
+                                    <span class="article-info-description">@Articles[2].Description </span><br />
+                                </div>
+                            </div>   
+                            }
+
+                            @if (Articles.Count > 3)
+                            {
+                            <div class="article-block">
+                                <div class="article-block-left">
+                                    <img class="picture" src="@Articles[3].ImageUrl" alt="Image"/>
+                                </div>
+                                <div class="article-block-right">
+                                    <br /><span class="article-info-author">@Articles[3].Author </span><br />
+                                    <span class="article-info-title">@Articles[3].Title </span><br />
+                                    <span class="article-info-description">@Articles[3].Description </span><br />
+                                </div>
+                            </div>   
+                            }
+
+                            @if (Articles.Count > 4)
+                            {
+                            <div class="article-block">
+                                <div class="article-block-left">
+                                    <img class="picture" src="@Articles[4].ImageUrl" alt="Image"/>
+                                </div>
+                                <div class="article-block-right">
+                                    <br /><span class="article-info-author">@Articles[4].Author </span><br />
+                                    <span class="article-info-title">@Articles[4].Title </span><br />
+                                    <span class="article-info-description">@Articles[4].Description </span><br />
+                                </div>
+                            </div>
+                            }
+                        </div>  
+                    </ContentTemplate>
+                </DashboardLayoutPanel>
+                }
+            </DashboardLayoutPanels>
+        </SfDashboardLayout>
+    </div>
+
+    <SfDialog Width="400px" @bind-Visible="ShowAddMessage" IsModal="true">
+        <DialogTemplates>
+            <Header> Watchlist </Header>
+            <Content>
+                @if(ResultAddStatus == "OK"){
+                    <span>Added to watchlist</span>
+                }
+                else
+                {
+                    <span>There is already an stock market in watchlist</span>
+                }
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButtons>
+                <DialogButton OnClick="@OnDialogClose" Content="OK" IsPrimary="true">
+                </DialogButton>
+            </DialogButtons>
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+<style>
+
+    .con{
+        font-size: 100px;
+    }
+
+    .box{
+        margin: auto;
+        position: relative;
+    }
+
+    .e-panel-content {
+        display: block;
+    }
+
+    .add-button{
+        position: absolute;
+        right: 30px;
+        border-radius: 50%;
+        width: 70px;
+        height: 70px;
+        background-color: #007feb;
+        border-radius: 50%;
+        box-shadow: 0 6px 10px 0 #666;
+        font-size: 40px;
+        line-height: 70px;
+        color: white;
+        text-align: center;
+        transition: all 0.1s ease-in-out;
+        border: none;
+    }
+
+    .add-button:hover {
+        box-shadow: 0 6px 14px 0 #666;
+        transform: scale(1.05);
+    }
+
+    .right-button{
+        width: 20%;
+    }
+
+    .articles{
+        width: 100%;
+    }
+    .article-block{
+        display: flex;
+        width: 95%;
+        margin: auto;
+        height: 20%;
+    }
+
+    .e-dashboardlayout.e-control .e-panel {
+        border: 0px;
+        box-shadow: none;
+    }
+
+    .e-dashboardlayout.e-control .e-panel:hover {
+        border: 0px;
+        box-shadow: none;
+    }
+
+    img{
+        width: 100%;
+        height: auto;
+    }
+
+    .picture{
+        margin: auto;
+        box-shadow: rgb(38, 57, 77) 0px 20px 30px -10px;
+    }
+
+
+    .article-block-left{
+        padding: 10px;
+        width: 30%;
+    }
+
+    .article-block-right{
+        padding-left: 50px;
+        width: 70%;
+    }
+
+    .e-tab .e-content .e-item {
+        color: #007feb;
+        font-size: 20px;
+    }
+
+    .information{
+        display: flex;
+        position: relative;
+    }
+    
+    .logo{
+        width: 200px;
+        height: 200px;
+        padding: 30px;
+    }
+
+    .logo-tab{
+        width: 10%;
+    }
+
+    .article-info-title{
+        font-size: 25px;
+        color: #007feb;
+    }
+
+    .article-info-author{
+        font-size: 30px;
+        color: #007feb;
+        font-weight: bold;
+    }
+
+    .article-info-description{
+        font-size: 20px;
+    }
+
+    .price-info{
+        height: 20%;
+        display: flex;
+    }
+
+    .price-left{
+        width: 20%;
+    }
+
+    .price-left-info{
+        font-size: 25px;
+        color: #007feb;
+    }
+
+    .price-right-info{
+        font-size: 25px;
+        color: #007feb;
+    }
+
+</style>
+
+@code {
+    public List<TechnicalIndicators> IndicatorType = new List<TechnicalIndicators>() { };
+    public List<TrendlineTypes> TrendlineType = new List<TrendlineTypes>() { };
+    public List<ChartSeriesType> SeriesType = new List<ChartSeriesType>() { };
+    private bool ShowAddMessage { get; set; } = false;
+    private string ResultAddStatus { get; set; }
+    private string UpdatePriceStatus { get; set; }
+
+    [Parameter] public string CurrentTicker { get; set; }
+    [Parameter] public string User { get; set; }
+    [Parameter] public StockMarketDetails StockMarket { get; set; }
+    [Parameter] public IEnumerable<OHLCDetails> PricesList { get; set; }
+    [Parameter] public IEnumerable<ArticleDetails> ArticlesList { get; set; }
+    public List<OHLCDetails> Prices { get; set; }
+    public List<ArticleDetails> Articles { get; set; }
+    public PriceDetailsExtend PriceExtend { get; set; }
+
+
+    public async void PointClick(StockChartPointEventArgs args)
+    {
+        try{
+            OHLCDetails TmpPriceExtend = Prices[(int)args.PointIndex];
+            PriceExtend = await _priceDetailsSerivce.GetPriceExtendFromPolygon(TmpPriceExtend.Ticker, TmpPriceExtend.Day);
+            if(PriceExtend is not null)
+            {
+                if(PriceExtend.AfterHours is not null && PriceExtend.PreMarket is not null)
+                {
+                    UpdatePriceStatus = await _priceDetailsSerivce.AddPriceExtendToDatabase(PriceExtend);
+                }
+            }
+            else
+            {
+                PriceExtend = await _priceDetailsSerivce.GetPriceExtendFromDatabase(TmpPriceExtend.Ticker, TmpPriceExtend.Day);
+            }
+
+            StateHasChanged();
+        }
+        catch
+        {
+             StateHasChanged();
+        }
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (PricesList is not null) Prices = PricesList.ToList();
+        if (ArticlesList is not null) Articles = ArticlesList.ToList();
+        StateHasChanged();
+    }
+
+    private async void AddStock()
+    {
+        ResultAddStatus = await _watchlistDetailsService.AddStockToWatchlist(CurrentTicker, User);
+        ShowAddMessage = true;
+    }
+
+    private async void OnDialogClose()
+    {
+        ShowAddMessage = false;
+    }
+
+}
