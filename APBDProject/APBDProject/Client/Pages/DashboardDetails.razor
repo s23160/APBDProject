@@ -15,7 +15,7 @@
                     <ContentTemplate>
                         @if(StockMarket is null)
                         {
-                            <h3>No data available on the stock market</h3>
+                            <h3>No data available in database</h3>
                         }
                         else
                         {
@@ -153,7 +153,7 @@
                             {
                                 <div class="price-info">
                                     <div class="price-left">
-                                        <br /><span class="price-left-info">From: @PriceExtend.Day.Date </span><br />
+                                        <br /><span class="price-left-info">From: @PriceExtend.Day.ToString("yyyy-MM-dd") </span><br />
                                         <span class="price-left-info">Symbol: @PriceExtend.Ticker </span><br />
                                         <span class="price-left-info">Open: @PriceExtend.Open </span><br />
                                         <span class="price-left-info">High: @PriceExtend.High </span><br />
@@ -174,7 +174,7 @@
                             {
                                 <div class="price-info">
                                     <div class="price-left">
-                                        <br /><span class="price-left-info">From: @Prices[0].Day </span><br />
+                                        <br /><span class="price-left-info">From: @Prices[0].Day.ToString("yyyy-MM-dd") </span><br />
                                         <span class="price-left-info">Symbol: @Prices[0].Ticker </span><br />
                                         <span class="price-left-info">Open: @Prices[0].Open </span><br />
                                         <span class="price-left-info">High: @Prices[0].High </span><br />
